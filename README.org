@@ -3,7 +3,7 @@
 * What is this?
 This repository if for classifying videos/sequences containing actions, and classifying them. This is written in Python 3.
 
-Currently we utilize the KTH dataset, which can be found here: [[http://www.nada.kth.se/cvap/actions/] ]along with that, for the interest points we utilize the Spatio-Temporal Interest Points as defined by Laptev et al., which can be found here: [[https://www.di.ens.fr/~laptev/download/stip-2.0-linux.zip] ]
+Currently we utilize the KTH dataset, which can be found here: [[http://www.nada.kth.se/cvap/actions/]]along with that, for the interest points we utilize the Spatio-Temporal Interest Points as defined by Laptev et al., which can be found here: [[https://www.di.ens.fr/~laptev/download/stip-2.0-linux.zip]]
 
 Note: Regarding STIP, to work correctly with the current OpenCV, a workaround has to be made to link the correct libs.
 * Installing
