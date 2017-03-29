@@ -47,13 +47,21 @@ class KTH(base_dataset):
                                             path_to_features + filename + "." + start + "-" + end + ".txt",
                                             start, end, filename)
 
-        if os.path.exists(init_file) and init_file:
+        if init_file is not None and os.path.exists(init_file):
             self.read_from_file(init_file)
         else:
             self.seq_dict = self.fill_sequence_dict()
             # KMeans
             self.kmeans = None
             self.get_train_vocabulary(self.train + self.validation + self.test, self.path_to_features)
+
+    def get_feature_vector_for_file(self, number, label, video_type, start, end):
+        file = "person" + str(number).zfill(2) + "_" + label + "_" + video_type + "." + str(start) + "-" + str(end) + ".txt"
+        position, descr = self.get_stip_features_from_file(self.path_to_features + file)
+
+        X = self.get_BOW_from_descriptors(descr, self.n_clusters)
+        y = self.labels.index(label)
+        return X, y
 
     def log(self, message):
         if self.verbose:
@@ -190,7 +198,6 @@ class KTH(base_dataset):
                         file = seq_file + "." + start + "-" + end + '.txt'
                         # print("Calculating Descriptor vector for file {}".format(file))
                         position, descr = self.get_stip_features_from_file(path_to_features + file)
-
                         X[i] = self.get_BOW_from_descriptors(descr, self.n_clusters)
                         y[i] = self.labels.index(label)
                         i += 1
@@ -265,12 +272,9 @@ class KTH(base_dataset):
         else:
             n_val = self.get_seq_count(self.validation)
 
-            X, y = self.get_BOW_from_file(n_val, self.train, self.path_to_features)
+            self.X_val, self.y_val = self.get_BOW_from_file(n_val, self.train, self.path_to_features)
 
-        self.X_val = X
-        self.y_val = y
-
-        return X, y
+        return self.X_val, self.y_val
 
 
     def test_features_labels(self, from_file=None):
@@ -282,12 +286,9 @@ class KTH(base_dataset):
         else:
             n_test = self.get_seq_count(self.test)
 
-            X, y = self.get_BOW_from_file(n_test, self.train, self.path_to_features)
+            self.X_test, self.y_test = self.get_BOW_from_file(n_test, self.train, self.path_to_features)
 
-        self.X_test = X
-        self.y_test = y
-
-        return X, y
+        return self.X_test, self.y_test
 
     def write_to_file(self, file):
         X_tr, y_tr = self.train_features_labels()
