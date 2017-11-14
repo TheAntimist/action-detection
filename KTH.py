@@ -16,7 +16,7 @@ class KTH(base_dataset):
     validation = [19, 20, 21, 23, 24, 25, 1, 4]
     test = [22, 2, 3, 5, 6, 7, 8, 9, 10]
 
-    path_to_videos = '/home/emanon/Desktop/BL/data/KTH/'
+    path_to_videos = '/home/emanon/Desktop/Ac_BL/data/KTH/'
     path_to_features = path_to_videos + "descr/"
 
     def __init__(self, n_clusters=1500, path_to_videos=None, path_to_features=None, sequence_file=None,
@@ -35,22 +35,32 @@ class KTH(base_dataset):
             self.path_to_features = path_to_features
 
         if calc_features:
+            from ParallelSTIP import start_stip_in_parallel
+            from queue import Queue
+
             self.log("Calculating STIP Features on the dataset.")
+
             if not os.path.exists(self.path_to_features): os.mkdir(self.path_to_features)
 
-            for file in os.listdir(path_to_videos):
-                filename, ext = os.path.splitext(file)
-                for sequence in self.seq_dict[filename]:
-                    start, end = sequence.split('-')
-                    self.log("Calculating features for {} at sequence {}-{}".format(filename, start, end))
-                    self.calc_stip_features(path_to_videos,
-                                            path_to_features + filename + "." + start + "-" + end + ".txt",
-                                            start, end, filename)
+            self.seq_dict = self.fill_sequence_dict()
+
+            q = Queue()
+            for file in os.listdir(self.path_to_videos):
+                if os.path.isfile(os.path.join(self.path_to_videos, file)):
+                    filename, ext = os.path.splitext(file)
+                    for sequence in self.seq_dict[filename]:
+                        start, end = sequence.split('-')
+                        q.put_nowait((self.path_to_videos, filename, os.path.join(self.path_to_features, filename + "." + start + "-" + end + ".txt"),
+                                      ext, start, end))
+
+            start_stip_in_parallel(q)
 
         if init_file is not None and os.path.exists(init_file):
             self.read_from_file(init_file)
         else:
-            self.seq_dict = self.fill_sequence_dict()
+            if not calc_features: # Already calculated during feature extraction from video
+                self.seq_dict = self.fill_sequence_dict()
+
             # KMeans
             self.kmeans = None
             self.get_train_vocabulary(self.train + self.validation + self.test, self.path_to_features)
@@ -95,38 +105,6 @@ class KTH(base_dataset):
 
                     count += len(self.seq_dict[seq_file])
         return count
-
-    def calc_stip_features(self, path_to_videos, path_to_output_file, start_frame, end_frame, file):
-        '''
-        Calculates the STIP features for a specified set of input files and stores them in the output location.
-
-        :param video_files: List of video's files the STIP features are to be computed for. DO NOT USE
-        :param path_to_videos: Directory containing the training dataset to be computed
-        :param path_to_output_file: Output file location containing the STIP features.
-        :param start_frame:
-        :param end_frame:
-        :return:
-        '''
-
-        path_to_stipdet = '/home/emanon/Desktop/BL/code/stip-2.0-linux/bin/stipdet'
-        path_to_stipdet_lib = '/home/emanon/Desktop/BL/code/stip-2.0-linux/lib'
-        # contains links to export the LD_LIBRARY_PATH correctly
-
-        with open(path_to_videos + "video_list.txt", "w") as video_list:
-            video_list.write(os.path.splitext(file)[0] + " " + start_frame + " " + end_frame + "\n")
-
-        args = path_to_stipdet + " -i " + \
-               path_to_videos + "video_list.txt " + "-vpath " + path_to_videos + " -o " + \
-               path_to_output_file + " -det harris3d -vis no -stdout no"
-
-        process = ["/bin/bash", "-c", args]
-
-        proc = sp.Popen(process, env=dict(os.environ, LD_LIBRARY_PATH=path_to_stipdet_lib))
-        proc.wait()
-        try:
-            os.remove(path_to_videos + "video_list.txt")
-        except:
-            self.log("Error removing video_list.txt\n")
 
     def get_stip_features_from_file(self, file):
         '''

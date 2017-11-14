@@ -13,4 +13,8 @@ or
 : pip install sklearn
 * Executing
 For now, to execute
-: python3 prepare_data.py
+: python3 classify.py
+* Files
+The main dataset working, and preprocessing of the descriptors to form a vocabulary is done by =KTH.py=. The =classify.py= calls it for accessing the processed dataset.
+
+The =KTH.pkl= contains the processed descriptors along with the classifiers and the rest. The =sequences.txt= and =sequences.pkl= contains the sequences of the actions to be classified. 
